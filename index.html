@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRM Property Map</title>
+  
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        #map {
+            width: 100%;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        .map-legend {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            max-width: 250px;
+        }
+
+        .map-legend h4 {
+            margin-bottom: 10px;
+            color: #2B5AA8;
+            font-size: 16px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin-right: 8px;
+            border: 1px solid #ddd;
+        }
+
+        .side-panel {
+            position: fixed;
+            top: 0;
+            left: -35%;
+            width: 35%;
+            max-width: 500px;
+            height: 100vh;
+            background: white;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+            z-index: 2000;
+            transition: left 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .side-panel.open {
+            left: 0;
+        }
+
+        .close-panel {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #333;
+            z-index: 10;
+        }
+
+        .panel-header {
+            background-color: #2B5AA8;
+            color: white;
+            padding: 20px;
+            position: relative;
+        }
+
+        .panel-content {
+            padding: 20px;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            color: #2B5AA8;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+
+        .property-images {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .property-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .image-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0,0,0,0.5);
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 4px;
+        }
+
+        .image-nav.prev {
+            left: 10px;
+        }
+
+        .image-nav.next {
+            right: 10px;
+        }
+
+        .image-counter {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .property-address {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .property-detail {
+            margin-bottom: 8px;
+            display: flex;
+        }
+
+        .property-detail-label {
+            font-weight: bold;
+            width: 120px;
+        }
+
+        .property-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+        }
+
+        .property-nav button {
+            background: #2B5AA8;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .property-nav button:hover {
+            background: #1e3d73;
+        }
+
+        .property-nav button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .owner-status-select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .phone-number {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .phone-number a {
+            color: #2B5AA8;
+            text-decoration: none;
+            margin-left: 8px;
+        }
+
+        .phone-number a:hover {
+            text-decoration: underline;
+        }
+
+        .spoken-indicator {
+            margin-left: 8px;
+            color: #70AD47;
+        }
+
+        .log-entry {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-date {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .log-type {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: white;
+            font-size: 12px;
+            margin-right: 8px;
+        }
+
+        .log-notes {
+            margin-top: 5px;
+        }
+
+        .add-log-btn {
+            background: #70AD47;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .add-log-btn:hover {
+            background: #5a8c3a;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.open {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            color: #2B5AA8;
+            font-size: 20px;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #2B5AA8;
+        }
+
+        .form-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: #2B5AA8;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1e3d73;
+        }
+
+        .btn-secondary {
+            background: #ccc;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #bbb;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            color: white;
+            z-index: 4000;
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background: #70AD47;
+        }
+
+        .notification.error {
+            background: #DC3545;
+        }
+
+        .notification.warning {
+            background: #FF8C42;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 5000;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2B5AA8;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .custom-marker {
+            background: transparent;
+            border: none;
+        }
+
+        .marker-pin {
+            width: 30px;
+            height: 42px;
+            position: relative;
+        }
+
+        .marker-pin::before {
+            content: '';
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            top: 0;
+            left: 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .marker-pin::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: white;
+            top: 8px;
+            left: 8px;
+            z-index: 1;
+        }
+
+        .marker-pin.selected::before {
+            transform: rotate(-45deg) scale(1.2);
+        }
+
+        .property-counter {
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+    </head>
+    <body>
+        <div id="map"></div>
+
+        <div class="map-legend">
+            <h4>Owner Status</h4>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #3498db;"></div>
+                <span>Never Spoken</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #34495e;"></div>
+                <span>IPA</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #2ecc71;"></div>
+                <span>Spoken To</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #e67e22;"></div>
+                <span>Listed</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #f1c40f;"></div>
+                <span>WR / ND</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #e91e63;"></div>
+                <span>Condo/Religious</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #9b59b6;"></div>
+                <span>Broker</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #34495e;"></div>
+                <span>TCG</span>
+            </div>
+        </div>
+
+        <div class="side-panel" id="sidePanel">
+            <button class="close-panel" onclick="closeSidePanel()">×</button>
+            <div class="panel-header">
+                <h2 id="panelTitle">Property Details</h2>
+            </div>
+            <div class="panel-content" id="panelContent">
+                <!-- Dynamic content populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Add Log Modal -->
+        <div id="addLogModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Add Communication Log</h3>
+                    <button class="close-modal" onclick="closeAddLogModal()">×</button>
+                </div>
+                <form id="addLogForm">
+                    <div class="form-group">
+                        <label class="form-label" for="logType">Type</label>
+                        <select class="form-control" id="logType" required>
+                            <option value="Call">Call</option>
+                            <option value="Text">Text</option>
+                            <option value="Email">Email</option>
+                            <option value="Letter">Letter</option>
+                            <option value="Meeting">Meeting</option>
+                            <option value="VM">VM</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="logDate">Date</label>
+                        <input type="date" class="form-control" id="logDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="logNotes">Notes</label>
+                        <textarea class="form-control" id="logNotes" rows="4" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="followUpDate">Next Follow-Up Date</label>
+                        <input type="date" class="form-control" id="followUpDate">
+                    </div>
+                    <div class="form-buttons">
+                        <button type="button" class="btn btn-secondary" onclick="closeAddLogModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add Log</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Notification -->
+        <div id="notification" class="notification"></div>
+
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+            <div class="spinner"></div>
+        </div>
+
+        <script>
+            // Configuration - Replace with your actual Supabase credentials
+            const SUPABASE_URL = 'https://dguwnqoeacfoxkddcacf.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRndXducW9lYWNmb3hrZGRjYWNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI2Mjk0MzAsImV4cCI6MjA3ODIwNTQzMH0.YpKD8VoZbuo4yAZ04h-7ZC5zHoEZ4LgayeMrTNE5nME';
+
+            // Initialize Supabase client
+            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+            // Global state
+            let map, allProperties = [], allOwners = [], allLogs = [];
+            let currentProperty = null;
+            let currentOwner = null;
+            let currentOwnerProperties = [];
+            let currentPropertyIndex = 0;
+            let mapPins = [];
+            let sidePanelOpen = false;
+            let selectedMarker = null;
+
+            // Owner status to color mapping
+            const STATUS_COLORS = {
+                'Never Spoken': '#3498db',
+                'IPA': '#34495e',
+                'Spoken To': '#2ecc71',
+                'Listed': '#e67e22',
+                'WR / ND': '#f1c40f',
+                'Condo/Religious': '#e91e63',
+                'Broker': '#9b59b6',
+                'TCG': '#34495e'
+            };
+
+            // Log type to color mapping
+            const LOG_TYPE_COLORS = {
+                'Call': '#2ecc71',
+                'Email': '#3498db',
+                'Text': '#f1c40f',
+                'Meeting': '#9b59b6',
+                'Letter': '#e91e63',
+                'VM': '#e67e22'
+            };
+
+            // Initialize on load
+            document.addEventListener('DOMContentLoaded', async () => {
+                showLoading();
+                try {
+                    initMap();
+                    await loadAllData();
+                    createMapPins();
+                    renderLegend();
+                    setTodayDate();
+                } catch (error) {
+                    console.error('Initialization error:', error);
+                    showNotification('Error initializing application', 'error');
+                } finally {
+                    hideLoading();
+                }
+            });
+
+            // Set today's date as default for log form
+            function setTodayDate() {
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('logDate').value = today;
+            }
+
+            // Show loading overlay
+            function showLoading() {
+                document.getElementById('loadingOverlay').style.display = 'flex';
+            }
+
+            // Hide loading overlay
+            function hideLoading() {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+
+            // Show notification
+            function showNotification(message, type = 'success') {
+                const notification = document.getElementById('notification');
+                notification.textContent = message;
+                notification.className = `notification ${type}`;
+                notification.classList.add('show');
+
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
+            }
+
+            // Initialize map
+            function initMap() {
+                map = L.map('map').setView([45.5231, -122.6765], 12);
+
+                L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+                    attribution: '© Google Maps',
+                    maxZoom: 20
+                }).addTo(map);
+            }
+
+            // Load all data from Supabase
+            async function loadAllData() {
+                try {
+                    // Load properties
+                    const { data: properties, error: propertiesError } = await supabase
+                    .from('properties')
+                    .select('*');
+
+                    if (propertiesError) throw propertiesError;
+                    allProperties = properties || [];
+
+                    // Load owners
+                    const { data: owners, error: ownersError } = await supabase
+                    .from('owners')
+                    .select('*');
+
+                    if (ownersError) throw ownersError;
+                    allOwners = owners || [];
+
+                    // Load communication logs
+                    const { data: logs, error: logsError } = await supabase
+                    .from('communication_logs')
+                    .select('*')
+                    .order('date', { ascending: false });
+
+                    if (logsError) throw logsError;
+                    allLogs = logs || [];
+
+                    console.log(`Loaded ${allProperties.length} properties, ${allOwners.length} owners, ${allLogs.length} logs`);
+                } catch (error) {
+                    console.error('Error loading data:', error);
+                    showNotification('Error loading data from database', 'error');
+                    throw error;
+                }
+            }
+
+            // Create map pins for all properties
+            function createMapPins() {
+                // Clear existing pins
+                mapPins.forEach(pin => map.removeLayer(pin));
+                mapPins = [];
+
+                // Create bounds to fit all pins
+                const bounds = L.latLngBounds();
+                let hasValidPins = false;
+
+                allProperties.forEach(property => {
+                    // Validate coordinates
+                    if (!property.latt || !property.long ||
+                        isNaN(property.latt) || isNaN(property.long) ||
+                        property.latt === 0 || property.long === 0) {
+                        return; // Skip properties with invalid coordinates
+                    }
+
+                    // Get owner status
+                    const owner = allOwners.find(o => o.id === property.owner_id);
+                    const status = owner ? owner.marker_pin : 'Unknown';
+                    const color = STATUS_COLORS[status] || '#999999';
+
+                    // Create custom marker
+                    const icon = L.divIcon({
+                        className: 'custom-marker',
+                        html: `<div class="marker-pin" style="color: ${color};"></div>`,
+                        iconSize: [30, 42],
+                        iconAnchor: [15, 42]
+                    });
+
+                    // Create marker
+                    const marker = L.marker([property.latt, property.long], { icon })
+                    .addTo(map)
+                    .bindTooltip(property.address || 'Unknown Address', { permanent: false, direction: 'top' });
+
+                    // Add click event
+                    marker.on('click', () => onPinClick(property.id));
+
+                    // Add to arrays
+                    mapPins.push(marker);
+                    bounds.extend([property.latt, property.long]);
+                    hasValidPins = true;
+                });
+
+                // Fit map to show all pins
+                if (hasValidPins) {
+                    map.fitBounds(bounds, { padding: [50, 50] });
+                } else {
+                    showNotification('No valid property coordinates found', 'warning');
+                }
+            }
+
+            // Handle pin click
+            async function onPinClick(propertyId) {
+                try {
+                    showLoading();
+
+                    // Find property
+                    const property = allProperties.find(p => p.id === propertyId);
+                    if (!property) {
+                        showNotification('Property not found', 'error');
+                        return;
+                    }
+
+                    // Find owner
+                    const owner = allOwners.find(o => o.id === property.owner_id);
+                    if (!owner) {
+                        showNotification('Owner not found', 'error');
+                        return;
+                    }
+
+                    // Find all properties for this owner
+                    const ownerProperties = allProperties.filter(p => p.owner_id === owner.id);
+                    const propertyIndex = ownerProperties.findIndex(p => p.id === propertyId);
+
+                    // Find communication logs for this owner
+                    const logs = allLogs.filter(l => l.owner_id === owner.id);
+
+                    // Update current state
+                    currentProperty = property;
+                    currentOwner = owner;
+                    currentOwnerProperties = ownerProperties;
+                    currentPropertyIndex = propertyIndex;
+
+                    // Highlight selected marker
+                    if (selectedMarker) {
+                        const prevIcon = selectedMarker.getIcon();
+                        prevIcon.options.html = prevIcon.options.html.replace(' selected', '');
+                        selectedMarker.setIcon(prevIcon);
+                    }
+
+                    selectedMarker = mapPins.find(m =>
+                                                  m.getLatLng().lat === property.latt &&
+                                                  m.getLatLng().lng === property.long
+                                                 );
+
+                    if (selectedMarker) {
+                        const icon = selectedMarker.getIcon();
+                        icon.options.html = icon.options.html.replace('marker-pin', 'marker-pin selected');
+                        selectedMarker.setIcon(icon);
+                    }
+
+                    // Render side panel
+                    renderSidePanel(property, owner, ownerProperties, propertyIndex, logs);
+
+                    // Open side panel
+                    openSidePanel();
+
+                    // Pan map to property
+                    map.panTo([property.latt, property.long]);
+
+                } catch (error) {
+                    console.error('Error handling pin click:', error);
+                    showNotification('Error loading property details', 'error');
+                } finally {
+                    hideLoading();
+                }
+            }
+
+            // Render side panel content
+            function renderSidePanel(property, owner, ownerProperties, propertyIndex, logs) {
+                const panelContent = document.getElementById('panelContent');
+
+                // Property images
+                const images = [];
+                if (property.image_url_1) images.push(property.image_url_1);
+                if (property.image_url_2) images.push(property.image_url_2);
+
+                let imageHtml = '';
+                if (images.length > 0) {
+                    imageHtml = `
+          <div class="property-images">
+            <img id="propertyImage" class="property-image" src="${images[0]}" alt="Property Image">
+            ${images.length > 1 ? `
+              <button class="image-nav prev" onclick="changeImage(-1)">‹</button>
+              <button class="image-nav next" onclick="changeImage(1)">›</button>
+              <div class="image-counter">1 / ${images.length}</div>
+            ` : ''}
+            </div>
+        `;
+                } else {
+                    imageHtml = `
+          <div class="property-images">
+            <div style="display: flex; justify-content: center; align-items: center; height: 100%; color: #999;">
+              No image available
+            </div>
+            </div>
+        `;
+                }
+
+                // Property navigation
+                let propertyNavHtml = '';
+                if (ownerProperties.length > 1) {
+                    propertyNavHtml = `
+          <div class="property-nav">
+            <button onclick="previousProperty()" ${propertyIndex === 0 ? 'disabled' : ''}>
+              <i class="fas fa-chevron-left"></i> Previous
+            </button>
+            <div class="property-counter">Property ${propertyIndex + 1} of ${ownerProperties.length}</div>
+            <button onclick="nextProperty()" ${propertyIndex === ownerProperties.length - 1 ? 'disabled' : ''}>
+              Next <i class="fas fa-chevron-right"></i>
+            </button>
+            </div>
+        `;
+                }
+
+                // Phone numbers
+                let phoneNumbersHtml = '';
+                for (let i = 1; i <= 5; i++) {
+                    const label = owner[`phone_label_${i}`];
+                    const number = owner[`phone_number_${i}`];
+                    const spoken = owner[`spoken_${i}`];
+
+                    if (label && number) {
+                        phoneNumbersHtml += `
+            <div class="phone-number">
+              <i class="fas fa-phone"></i>
+              <span>${label}:</span>
+              <a href="tel:${number}">${number}</a>
+              ${spoken ? '<i class="fas fa-check-circle spoken-indicator" title="Spoken"></i>' : ''}
+            </div>
+          `;
+                    }
+                }
+
+                // Communication logs
+                let logsHtml = '';
+                if (logs.length > 0) {
+                    logsHtml = logs.map(log => {
+                        const color = LOG_TYPE_COLORS[log.type] || '#999999';
+                        return `
+            <div class="log-entry">
+              <div class="log-date">
+                ${new Date(log.date).toLocaleDateString()}
+                <span class="log-type" style="background-color: ${color};">${log.type}</span>
+            </div>
+              <div class="log-notes">${log.notes}</div>
+            </div>
+          `;
+                    }).join('');
+                } else {
+                    logsHtml = '<p>No communication history</p>';
+                }
+
+                // Owner status options
+                const statusOptions = Object.keys(STATUS_COLORS).map(status =>
+                                                                     `<option value="${status}" ${owner.marker_pin === status ? 'selected' : ''}>${status}</option>`
+                                                                    ).join('');
+
+                // Combine all HTML
+                panelContent.innerHTML = `
+        ${imageHtml}
+
+        ${propertyNavHtml}
+
+        <div class="section">
+          <h3 class="section-title">Property Information</h3>
+          <div class="property-address">${property.address || 'Unknown Address'}</div>
+          <div class="property-detail">
+            <span class="property-detail-label">Property Name:</span>
+            <span>${property.property_name || 'N/A'}</span>
+            </div>
+          <div class="property-detail">
+            <span class="property-detail-label">Number of Units:</span>
+            <span>${property.units || 'N/A'}</span>
+            </div>
+          <div class="property-detail">
+            <span class="property-detail-label">Year Built:</span>
+            <span>${property.built || 'N/A'}</span>
+            </div>
+          <div class="property-detail">
+            <span class="property-detail-label">Property Type:</span>
+            <span>${property.property_type || 'N/A'}</span>
+            </div>
+          <div class="property-detail">
+            <span class="property-detail-label">Submarket:</span>
+            <span>${property.submarket || 'N/A'}</span>
+            </div>
+            </div>
+
+        <div class="section">
+          <h3 class="section-title">Owner Information</h3>
+          <div class="property-detail">
+            <span class="property-detail-label">Owner Name:</span>
+            <span>${owner.owner_name || 'N/A'}</span>
+            </div>
+          <div class="property-detail">
+            <span class="property-detail-label">Status:</span>
+            <select class="owner-status-select" onchange="updateOwnerStatus('${owner.id}', this.value)">
+              ${statusOptions}
+            </select>
+            </div>
+          <div class="property-detail">
+            <span class="property-detail-label">Email:</span>
+            <span>${owner.owner_email || 'N/A'}</span>
+            </div>
+          <div class="property-detail">
+            <span class="property-detail-label">Address:</span>
+            <span>${owner.owner_address || 'N/A'}</span>
+            </div>
+          <div class="property-detail">
+            <span class="property-detail-label">Last Spoken:</span>
+            <span>${owner.last_spoken ? new Date(owner.last_spoken).toLocaleDateString() : 'Never'}</span>
+            </div>
+          <div class="property-detail">
+            <span class="property-detail-label">Next Follow-Up:</span>
+            <span>${owner.next_follow_up ? new Date(owner.next_follow_up).toLocaleDateString() : 'Not set'}</span>
+            </div>
+            </div>
+
+        <div class="section">
+          <h3 class="section-title">Phone Numbers</h3>
+          ${phoneNumbersHtml || '<p>No phone numbers available</p>'}
+            </div>
+
+        <div class="section">
+          <h3 class="section-title">Communication History</h3>
+          <button class="add-log-btn" onclick="showAddLogModal()">
+            <i class="fas fa-plus"></i> Add Log
+            </button>
+          <div class="logs-container">
+            ${logsHtml}
+            </div>
+            </div>
+      `;
+
+                // Store images for navigation
+                if (images.length > 1) {
+                    window.currentImages = images;
+                    window.currentImageIndex = 0;
+                }
+            }
+
+            // Change property image
+            function changeImage(direction) {
+                if (!window.currentImages || window.currentImages.length <= 1) return;
+
+                window.currentImageIndex += direction;
+
+                // Wrap around
+                if (window.currentImageIndex < 0) {
+                    window.currentImageIndex = window.currentImages.length - 1;
+                } else if (window.currentImageIndex >= window.currentImages.length) {
+                    window.currentImageIndex = 0;
+                }
+
+                // Update image
+                document.getElementById('propertyImage').src = window.currentImages[window.currentImageIndex];
+
+                // Update counter
+                document.querySelector('.image-counter').textContent =
+                    `${window.currentImageIndex + 1} / ${window.currentImages.length}`;
+            }
+
+            // Navigate to next property
+            function nextProperty() {
+                if (currentPropertyIndex < currentOwnerProperties.length - 1) {
+                    const nextProperty = currentOwnerProperties[currentPropertyIndex + 1];
+                    onPinClick(nextProperty.id);
+                }
+            }
+
+            // Navigate to previous property
+            function previousProperty() {
+                if (currentPropertyIndex > 0) {
+                    const prevProperty = currentOwnerProperties[currentPropertyIndex - 1];
+                    onPinClick(prevProperty.id);
+                }
+            }
+
+            // Open side panel
+            function openSidePanel() {
+                document.getElementById('sidePanel').classList.add('open');
+                sidePanelOpen = true;
+            }
+
+            // Close side panel
+            function closeSidePanel() {
+                document.getElementById('sidePanel').classList.remove('open');
+                sidePanelOpen = false;
+
+                // Deselect marker
+                if (selectedMarker) {
+                    const icon = selectedMarker.getIcon();
+                    icon.options.html = icon.options.html.replace(' selected', '');
+                    selectedMarker.setIcon(icon);
+                    selectedMarker = null;
+                }
+            }
+
+            // Update owner status
+            async function updateOwnerStatus(ownerId, newStatus) {
+                try {
+                    showLoading();
+
+                    // Update in Supabase
+                    const { error } = await supabase
+                    .from('owners')
+                    .update({ marker_pin: newStatus })
+                    .eq('id', ownerId);
+
+                    if (error) throw error;
+
+                    // Update local state
+                    const ownerIndex = allOwners.findIndex(o => o.id === ownerId);
+                    if (ownerIndex !== -1) {
+                        allOwners[ownerIndex].marker_pin = newStatus;
+                    }
+
+                    // Update current owner if it's the one being edited
+                    if (currentOwner && currentOwner.id === ownerId) {
+                        currentOwner.marker_pin = newStatus;
+                    }
+
+                    // Update marker color
+                    createMapPins();
+
+                    // Re-select current property
+                    if (currentProperty) {
+                        onPinClick(currentProperty.id);
+                    }
+
+                    showNotification('Owner status updated successfully', 'success');
+                } catch (error) {
+                    console.error('Error updating owner status:', error);
+                    showNotification('Error updating owner status', 'error');
+                } finally {
+                    hideLoading();
+                }
+            }
+
+            // Show add log modal
+            function showAddLogModal() {
+                document.getElementById('addLogModal').classList.add('open');
+            }
+
+            // Close add log modal
+            function closeAddLogModal() {
+                document.getElementById('addLogModal').classList.remove('open');
+                document.getElementById('addLogForm').reset();
+                setTodayDate();
+            }
+
+            // Handle add log form submission
+            document.getElementById('addLogForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                try {
+                    showLoading();
+
+                    const logType = document.getElementById('logType').value;
+                    const logDate = document.getElementById('logDate').value;
+                    const logNotes = document.getElementById('logNotes').value;
+                    const followUpDate = document.getElementById('followUpDate').value;
+
+                    // Insert new log
+                    const { data: newLog, error: logError } = await supabase
+                    .from('communication_logs')
+                    .insert([{
+                        owner_id: currentOwner.id,
+                        owner_name: currentOwner.owner_name,
+                        date: logDate,
+                        type: logType,
+                        notes: logNotes
+                    }])
+                    .select();
+
+                    if (logError) throw logError;
+
+                    // Update local logs
+                    allLogs.unshift(newLog[0]);
+
+                    // If it's a call, update last_spoken
+                    if (logType === 'Call') {
+                        const { error: updateError } = await supabase
+                        .from('owners')
+                        .update({ last_spoken: logDate })
+                        .eq('id', currentOwner.id);
+
+                        if (updateError) throw updateError;
+
+                        // Update local owner data
+                        const ownerIndex = allOwners.findIndex(o => o.id === currentOwner.id);
+                        if (ownerIndex !== -1) {
+                            allOwners[ownerIndex].last_spoken = logDate;
+                        }
+
+                        if (currentOwner) {
+                            currentOwner.last_spoken = logDate;
+                        }
+                    }
+
+                    // Update next_follow_up if provided
+                    if (followUpDate) {
+                        const { error: updateError } = await supabase
+                        .from('owners')
+                        .update({ next_follow_up: followUpDate })
+                        .eq('id', currentOwner.id);
+
+                        if (updateError) throw updateError;
+
+                        // Update local owner data
+                        const ownerIndex = allOwners.findIndex(o => o.id === currentOwner.id);
+                        if (ownerIndex !== -1) {
+                            allOwners[ownerIndex].next_follow_up = followUpDate;
+                        }
+
+                        if (currentOwner) {
+                            currentOwner.next_follow_up = followUpDate;
+                        }
+                    }
+
+                    // Refresh side panel
+                    const logs = allLogs.filter(l => l.owner_id === currentOwner.id);
+                    renderSidePanel(currentProperty, currentOwner, currentOwnerProperties, currentPropertyIndex, logs);
+
+                    // Close modal
+                    closeAddLogModal();
+
+                    showNotification('Communication log added successfully', 'success');
+                } catch (error) {
+                    console.error('Error adding communication log:', error);
+                    showNotification('Error adding communication log', 'error');
+                } finally {
+                    hideLoading();
+                }
+            });
+
+            // Render legend (already in HTML, but keeping function for completeness)
+            function renderLegend() {
+                // Legend is already rendered in HTML
+            }
+        </script>
+    </body>
+</html>
