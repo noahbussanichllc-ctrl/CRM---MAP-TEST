@@ -859,8 +859,20 @@
     let sidePanelOpen = false;
     let selectedMarker = null;
     let searchMarker = null;
+
+    // Owner status to color mapping
+    const STATUS_COLORS = {
+      'Never Spoken': '#3498db',
+      'IPA': '#34495e',
+      'Spoken To': '#2ecc71',
+      'Listed': '#e67e22',
+      'WR / ND': '#f1c40f',
+      'Condo/Religious': '#e91e63',
+      'Broker': '#9b59b6',
+      'TCG': '#34495e'
+    };
     
-    
+
     // Log type to color mapping
     const LOG_TYPE_COLORS = {
       'Call': '#2ecc71',
@@ -1176,7 +1188,7 @@
         "Condo/Religious": "pink",
         "Broker": "purple",
         "TCG": "black",
-        "IPA": "white"
+        "IPA": "black"
       };
       const color = colorMap[status] || "red"; // fallback color
       return L.icon({
