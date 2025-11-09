@@ -81,6 +81,51 @@
     .search-button:hover {
       background: #1e3d73;
     }
+
+    /* Filter Container */
+    .filter-container {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        z-index: 1000;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+
+    .filter-header h2 {
+        margin-bottom: 15px;
+        font-size: 18px;
+        color: #333;
+    }
+
+    .filter-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+        align-items: center;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .filter-group label {
+        margin-bottom: 5px;
+        font-size: 12px;
+        color: #666;
+    }
+
+    .filter-group select,
+    .filter-group input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 14px;
+    }
     
     /* Map Legend */
     .map-legend {
@@ -725,6 +770,61 @@
 <body>
   <div id="map"></div>
   
+  <!-- Filter Properties -->
+<div class="filter-container">
+    <div class="filter-header">
+        <h2>Filter Properties</h2>
+    </div>
+    <div class="filter-grid">
+        <div class="filter-group">
+            <label for="locationFilter">Location</label>
+            <select id="locationFilter">
+                <option value="">All Locations</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="cityFilter">City</label>
+            <select id="cityFilter">
+                <option value="">All Cities</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="submarketFilter">Submarket</label>
+            <select id="submarketFilter">
+                <option value="">All Submarkets</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="zipFilter">Zip</label>
+            <select id="zipFilter">
+                <option value="">All Zips</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="minYear">Year Built (Min)</label>
+            <input type="number" id="minYear" placeholder="Min Year">
+        </div>
+        <div class="filter-group">
+            <label for="maxYear">Year Built (Max)</label>
+            <input type="number" id="maxYear" placeholder="Max Year">
+        </div>
+        <div class="filter-group">
+            <label for="minUnits">Units (Min)</label>
+            <input type="number" id="minUnits" placeholder="Min Units">
+        </div>
+        <div class="filter-group">
+            <label for="maxUnits">Units (Max)</label>
+            <input type="number" id="maxUnits" placeholder="Max Units">
+        </div>
+        <div class="filter-group">
+            <label for="statusFilter">Owner Status</label>
+            <select id="statusFilter">
+                <option value="">All Statuses</option>
+            </select>
+        </div>
+    </div>
+</div>
+
   <!-- Search Bar -->
   <div class="search-container">
     <div class="search-box">
@@ -737,39 +837,45 @@
   
   <div class="map-legend">
     <h4>Owner Status</h4>
-    <div class="legend-item">
-      <img src="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png" style="width: 12px; height: 20px; margin-right: 5px;">
-      <span>Never Spoken</span>
+    <div id="legend-items">
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #3498db;"></div>
+            <span>Never Spoken</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #34495e; border: 1px solid #ccc;"></div>
+            <span>IPA</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #2ecc71;"></div>
+            <span>Spoken To</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #e67e22;"></div>
+            <span>Listed</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #f1c40f;"></div>
+            <span>WR / ND</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #e91e63;"></div>
+            <span>Condo/Religious</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #9b59b6;"></div>
+            <span>Broker</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #34495e;"></div>
+            <span>TCG</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: red;"></div>
+            <span>Owner Not Found</span>
+        </div>
     </div>
-    <div class="legend-item">
-      <img src="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-white.png" style="width: 12px; height: 20px; margin-right: 5px; border: 1px solid #ccc;">
-      <span>IPA</span>
-    </div>
-    <div class="legend-item">
-      <img src="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png" style="width: 12px; height: 20px; margin-right: 5px;">
-      <span>Spoken To</span>
-    </div>
-    <div class="legend-item">
-      <img src="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png" style="width: 12px; height: 20px; margin-right: 5px;">
-      <span>Listed</span>
-    </div>
-    <div class="legend-item">
-      <img src="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-yellow.png" style="width: 12px; height: 20px; margin-right: 5px;">
-      <span>WR / ND</span>
-    </div>
-    <div class="legend-item">
-      <img src="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-pink.png" style="width: 12px; height: 20px; margin-right: 5px;">
-      <span>Condo/Religious</span>
-    </div>
-    <div class="legend-item">
-      <img src="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-purple.png" style="width: 12px; height: 20px; margin-right: 5px;">
-      <span>Broker</span>
-    </div>
-    <div class="legend-item">
-      <img src="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-black.png" style="width: 12px; height: 20px; margin-right: 5px;">
-      <span>TCG</span>
-    </div>
-  </div>
+</div>
   
   <div class="side-panel" id="sidePanel">
     <button class="close-panel" onclick="closeSidePanel()">
@@ -908,7 +1014,9 @@
       }).addTo(map);
       
       // Initialize marker cluster group
-      markerCluster = L.markerClusterGroup();
+      markerCluster = L.markerClusterGroup({
+        disableClusteringAtZoom: 16
+      });
       
       map.addLayer(markerCluster);
     }
@@ -1016,6 +1124,8 @@
         // Show debug info
         showDebugInfo();
         
+        populateFilters();
+
         showNotification(`Loaded ${allProperties.length} properties`, 'info');
       } catch (error) {
         console.error('Error loading data:', error);
@@ -1083,6 +1193,99 @@
         }
       }, 15000);
     }
+
+    function populateFilters() {
+    const locationFilter = document.getElementById('locationFilter');
+    const cityFilter = document.getElementById('cityFilter');
+    const submarketFilter = document.getElementById('submarketFilter');
+    const zipFilter = document.getElementById('zipFilter');
+    const statusFilter = document.getElementById('statusFilter');
+
+    const locations = [...new Set(allProperties.map(p => p.location).filter(Boolean))];
+    const cities = [...new Set(allProperties.map(p => p.city).filter(Boolean))];
+    const submarkets = [...new Set(allProperties.map(p => p.submarket).filter(Boolean))];
+    const zips = [...new Set(allProperties.map(p => p.zip_code).filter(Boolean))];
+    const statuses = Object.keys(STATUS_COLORS);
+
+    locations.sort().forEach(location => {
+        const option = document.createElement('option');
+        option.value = location;
+        option.textContent = location;
+        locationFilter.appendChild(option);
+    });
+
+    cities.sort().forEach(city => {
+        const option = document.createElement('option');
+        option.value = city;
+        option.textContent = city;
+        cityFilter.appendChild(option);
+    });
+
+    submarkets.sort().forEach(submarket => {
+        const option = document.createElement('option');
+        option.value = submarket;
+        option.textContent = submarket;
+        submarketFilter.appendChild(option);
+    });
+
+    zips.sort().forEach(zip => {
+        const option = document.createElement('option');
+        option.value = zip;
+        option.textContent = zip;
+        zipFilter.appendChild(option);
+    });
+
+    statuses.forEach(status => {
+        const option = document.createElement('option');
+        option.value = status;
+        option.textContent = status;
+        statusFilter.appendChild(option);
+    });
+
+    document.getElementById('locationFilter').addEventListener('change', filterMarkers);
+    document.getElementById('cityFilter').addEventListener('change', filterMarkers);
+    document.getElementById('submarketFilter').addEventListener('change', filterMarkers);
+    document.getElementById('zipFilter').addEventListener('change', filterMarkers);
+    document.getElementById('minYear').addEventListener('input', filterMarkers);
+    document.getElementById('maxYear').addEventListener('input', filterMarkers);
+    document.getElementById('minUnits').addEventListener('input', filterMarkers);
+    document.getElementById('maxUnits').addEventListener('input', filterMarkers);
+    document.getElementById('statusFilter').addEventListener('change', filterMarkers);
+}
+
+function filterMarkers() {
+    const location = document.getElementById('locationFilter').value;
+    const city = document.getElementById('cityFilter').value;
+    const submarket = document.getElementById('submarketFilter').value;
+    const zip = document.getElementById('zipFilter').value;
+    const minYear = parseInt(document.getElementById('minYear').value, 10) || 0;
+    const maxYear = parseInt(document.getElementById('maxYear').value, 10) || Infinity;
+    const minUnits = parseInt(document.getElementById('minUnits').value, 10) || 0;
+    const maxUnits = parseInt(document.getElementById('maxUnits').value, 10) || Infinity;
+    const status = document.getElementById('statusFilter').value;
+
+    markerCluster.clearLayers();
+
+    const filteredProperties = allProperties.filter(p => {
+        const owner = allOwners.find(o => o.id === p.owner_id);
+        const ownerStatus = owner ? owner.marker_pin : '';
+
+        return (!location || p.location === location) &&
+               (!city || p.city === city) &&
+               (!submarket || p.submarket === submarket) &&
+               (!zip || p.zip_code === zip) &&
+               (p.built >= minYear && p.built <= maxYear) &&
+               (p.units >= minUnits && p.units <= maxUnits) &&
+               (!status || ownerStatus === status);
+    });
+
+    filteredProperties.forEach(property => {
+        const marker = markers.find(m => m.propertyId === property.id);
+        if (marker) {
+            markerCluster.addLayer(marker);
+        }
+    });
+}
     
     // Check if coordinates are valid
     function isValidCoordinate(lat, lng) {
