@@ -969,13 +969,14 @@
     // Owner status to color mapping
     const STATUS_COLORS = {
       'Never Spoken': '#3498db',
-      'IPA': '#34495e',
+      'IPA': '#ffffff',
       'Spoken To': '#2ecc71',
       'Listed': '#e67e22',
       'WR / ND': '#f1c40f',
       'Condo/Religious': '#e91e63',
       'Broker': '#9b59b6',
-      'TCG': '#34495e'
+      'TCG': '#34495e',
+      'Owner Not Found': 'red'
     };
     
 
@@ -1015,7 +1016,8 @@
       
       // Initialize marker cluster group
       markerCluster = L.markerClusterGroup({
-        disableClusteringAtZoom: 16
+        spiderfyOnMaxZoom: true,
+        maxClusterRadius: 80
       });
       
       map.addLayer(markerCluster);
@@ -1268,7 +1270,7 @@ function filterMarkers() {
 
     const filteredProperties = allProperties.filter(p => {
         const owner = allOwners.find(o => o.id === p.owner_id);
-        const ownerStatus = owner ? owner.marker_pin : '';
+        const ownerStatus = owner ? owner.marker_pin : 'Owner Not Found';
 
         return (!location || p.location === location) &&
                (!city || p.city === city) &&
@@ -1418,17 +1420,13 @@ function filterMarkers() {
         
         // Find owner
         const owner = allOwners.find(o => o.id === property.owner_id);
-        if (!owner) {
-          showNotification('Owner not found', 'error');
-          return;
-        }
-        
+
         // Find all properties for this owner
-        const ownerProperties = allProperties.filter(p => p.owner_id === owner.id);
+        const ownerProperties = owner ? allProperties.filter(p => p.owner_id === owner.id) : [property];
         const propertyIndex = ownerProperties.findIndex(p => p.id === propertyId);
         
         // Find communication logs for this owner
-        const logs = allLogs.filter(l => l.owner_id === owner.id);
+        const logs = owner ? allLogs.filter(l => l.owner_id === owner.id) : [];
         
         // Update current state
         currentProperty = property;
@@ -1472,7 +1470,7 @@ function filterMarkers() {
       const ownerNameElement = document.getElementById('ownerName');
       
       // Set owner name in header
-      ownerNameElement.textContent = owner.owner_name || 'Unknown Owner';
+      ownerNameElement.textContent = owner ? owner.owner_name : 'Owner Not Found';
       
       // Property images
       const images = [];
@@ -1523,23 +1521,25 @@ function filterMarkers() {
       
       // Phone numbers
       let phoneNumbersHtml = '';
-      for (let i = 1; i <= 5; i++) {
-        const label = owner[`phone_label_${i}`];
-        const number = owner[`phone_number_${i}`];
-        const spoken = owner[`spoken_${i}`];
-        
-        if (label && number) {
-          phoneNumbersHtml += `
-            <div class="phone-number">
-              <i class="fas fa-phone"></i>
-              <span>${label}:</span>
-              <a href="tel:${number}">${number}</a>
-              ${spoken ? '<i class="fas fa-check-circle spoken-indicator" title="Spoken"></i>' : ''}
-            </div>
-          `;
-        }
+      if (owner) {
+          for (let i = 1; i <= 5; i++) {
+              const label = owner[`phone_label_${i}`];
+              const number = owner[`phone_number_${i}`];
+              const spoken = owner[`spoken_${i}`];
+
+              if (label && number) {
+                  phoneNumbersHtml += `
+              <div class="phone-number">
+                <i class="fas fa-phone"></i>
+                <span>${label}:</span>
+                <a href="tel:${number}">${number}</a>
+                ${spoken ? '<i class="fas fa-check-circle spoken-indicator" title="Spoken"></i>' : ''}
+              </div>
+            `;
+              }
+          }
       }
-      
+
       // Communication logs
       let logsHtml = '';
       if (logs.length > 0) {
@@ -1567,66 +1567,10 @@ function filterMarkers() {
       
       // Owner status options
       const statusOptions = Object.keys(STATUS_COLORS).map(status =>
-        `<option value="${status}" ${owner.marker_pin === status ? 'selected' : ''}>${status}</option>`
+          `<option value="${status}" ${owner && owner.marker_pin === status ? 'selected' : ''}>${status}</option>`
       ).join('');
-      
-      // Get coordinates for display
-      const lat = property.latt || property.lat;
-      const lng = property.long || property.lng;
-      
-      // Combine all HTML
-      panelContent.innerHTML = `
-        ${imageHtml}
-        
-        ${propertyNavHtml}
-        
-        <div class="section">
-          <h3 class="section-title">
-            <i class="fas fa-building"></i>
-            Property Information
-          </h3>
-          <div class="property-detail">
-            <span class="property-detail-label">Address:</span>
-            <span class="property-detail-value">
-              <input type="text" class="editable-field" id="propertyAddress" value="${property.address || ''}">
-            </span>
-          </div>
-          <div class="property-detail">
-            <span class="property-detail-label">Property Name:</span>
-            <span class="property-detail-value">
-              <input type="text" class="editable-field" id="propertyName" value="${property.property_name || ''}">
-            </span>
-          </div>
-          <div class="property-detail">
-            <span class="property-detail-label">Number of Units:</span>
-            <span class="property-detail-value">
-              <input type="text" class="editable-field" id="propertyUnits" value="${property.units || ''}">
-            </span>
-          </div>
-          <div class="property-detail">
-            <span class="property-detail-label">Year Built:</span>
-            <span class="property-detail-value">
-              <input type="text" class="editable-field" id="propertyBuilt" value="${property.built || ''}">
-            </span>
-          </div>
-          <div class="property-detail">
-            <span class="property-detail-label">Property Type:</span>
-            <span class="property-detail-value">
-              <input type="text" class="editable-field" id="propertyType" value="${property.property_type || ''}">
-            </span>
-          </div>
-          <div class="property-detail">
-            <span class="property-detail-label">Submarket:</span>
-            <span class="property-detail-value">
-              <input type="text" class="editable-field" id="propertySubmarket" value="${property.submarket || ''}">
-            </span>
-          </div>
-          <div class="property-detail">
-            <span class="property-detail-label">Coordinates:</span>
-            <span class="property-detail-value">${lat}, ${lng}</span>
-          </div>
-        </div>
-        
+
+      const ownerInfoHtml = owner ? `
         <div class="section">
           <h3 class="section-title">
             <i class="fas fa-user"></i>
@@ -1688,12 +1632,77 @@ function filterMarkers() {
             ${logsHtml}
           </div>
         </div>
+      ` : `
+        <div class="section">
+          <h3 class="section-title">
+            <i class="fas fa-user"></i>
+            Owner Information
+          </h3>
+          <p style="color: #6c757d; text-align: center; padding: 20px;">No owner information available for this property.</p>
+        </div>
+      `;
+
+      // Get coordinates for display
+      const lat = property.latt || property.lat;
+      const lng = property.long || property.lng;
+
+      // Combine all HTML
+      panelContent.innerHTML = `
+        ${imageHtml}
+
+        ${propertyNavHtml}
         
         <div class="section">
-          <button class="save-btn" onclick="savePropertyData()">
-            <i class="fas fa-save"></i> Save Changes
-          </button>
+          <h3 class="section-title">
+            <i class="fas fa-building"></i>
+            Property Information
+          </h3>
+          <div class="property-detail">
+            <span class="property-detail-label">Address:</span>
+            <span class="property-detail-value">
+              <input type="text" class="editable-field" id="propertyAddress" value="${property.address || ''}">
+            </span>
+          </div>
+          <div class="property-detail">
+            <span class="property-detail-label">Property Name:</span>
+            <span class="property-detail-value">
+              <input type="text" class="editable-field" id="propertyName" value="${property.property_name || ''}">
+            </span>
+          </div>
+          <div class="property-detail">
+            <span class="property-detail-label">Number of Units:</span>
+            <span class="property-detail-value">
+              <input type="text" class="editable-field" id="propertyUnits" value="${property.units || ''}">
+            </span>
+          </div>
+          <div class="property-detail">
+            <span class="property-detail-label">Year Built:</span>
+            <span class="property-detail-value">
+              <input type="text" class="editable-field" id="propertyBuilt" value="${property.built || ''}">
+            </span>
+          </div>
+          <div class="property-detail">
+            <span class="property-detail-label">Property Type:</span>
+            <span class="property-detail-value">
+              <input type="text" class="editable-field" id="propertyType" value="${property.property_type || ''}">
+            </span>
+          </div>
+          <div class="property-detail">
+            <span class="property-detail-label">Submarket:</span>
+            <span class="property-detail-value">
+              <input type="text" class="editable-field" id="propertySubmarket" value="${property.submarket || ''}">
+            </span>
+          </div>
+          <div class="property-detail">
+            <span class="property-detail-label">Coordinates:</span>
+            <span class="property-detail-value">${lat}, ${lng}</span>
+          </div>
+          <a href="https://www.google.com/search?q=CoStar+${encodeURIComponent(property.address || '')}" target="_blank" class="btn btn-secondary" style="margin-top: 15px; text-decoration: none; display: inline-flex; align-items: center;">
+              <i class="fas fa-external-link-alt" style="margin-right: 8px;"></i> CoStar Link
+          </a>
         </div>
+
+        ${ownerInfoHtml}
       `;
       
       // Store images for navigation
@@ -1701,6 +1710,12 @@ function filterMarkers() {
         window.currentImages = images;
         window.currentImageIndex = 0;
       }
+
+      // Add event listeners for auto-save
+      const editableFields = document.querySelectorAll('.editable-field, .owner-status-select');
+      editableFields.forEach(field => {
+          field.addEventListener('input', autoSavePropertyData);
+      });
     }
     
     // Change property image
@@ -1799,9 +1814,21 @@ function filterMarkers() {
       }
     }
     
-    // Save property data
-    async function savePropertyData() {
+    // Debounce function
+    function debounce(func, delay) {
+        let timeout;
+        return function(...args) {
+            const context = this;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), delay);
+        };
+    }
+
+    const autoSavePropertyData = debounce(async () => {
       try {
+        const currentCenter = map.getCenter();
+        const currentZoom = map.getZoom();
+
         showLoading();
         
         // Get updated values
@@ -1878,8 +1905,15 @@ function filterMarkers() {
         // Update marker color
         createMapMarkers();
         
-        // Re-select current property
-        onMarkerClick(currentProperty.id);
+        // Re-select current property and restore map view
+        if (currentProperty) {
+            const marker = markers.find(m => m.propertyId === currentProperty.id);
+            if (marker && marker._icon) {
+                L.DomUtil.addClass(marker._icon, 'selected-marker');
+                selectedMarker = marker;
+            }
+        }
+        map.setView(currentCenter, currentZoom);
         
         showNotification('Property data saved successfully', 'success');
       } catch (error) {
@@ -1888,7 +1922,9 @@ function filterMarkers() {
       } finally {
         hideLoading();
       }
-    }
+    }, 1500);
+
+
     
     // Show add log modal
     function showAddLogModal() {
