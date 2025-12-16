@@ -947,13 +947,13 @@
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   
   <script>
-    // Configuration - Replace with your actual Supabase credentials
-      const SUPABASE_URL = 'https://xxqesoposwpvljxdfkim.supabase.co';
-      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh4cWVzb3Bvc3dwdmxqeGRma2ltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzNTU1NDcsImV4cCI6MjA3NDkzMTU0N30.zCJvWNnoKxTlOxJgos8dqfoVYqlXvsfk7_GbjGyt2jo';
+    // Supabase Configuration
+        const SUPABASE_URL = 'https://xxqesoposwpvljxdfkim.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh4cWVzb3Bvc3dwdmxqeGRma2ltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzNTU1NDcsImV4cCI6MjA3NDkzMTU0N30.zCJvWNnoKxTlOxJgos8dqfoVYqlXvsfk7_GbjGyt2jo';
 
-    
-    // Initialize Supabase client
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Initialize Supabase client (reassign global instead of redeclaring)
+        const { createClient } = supabase;
+        supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
     // Global state
     let map, markers = [], markerCluster;
